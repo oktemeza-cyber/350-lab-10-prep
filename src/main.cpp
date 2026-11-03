@@ -36,6 +36,8 @@ int main() {
     // TODO: eventually add another Shader here which uses the blur fragment shader,
     // also create a sf::RenderTexture...
     auto start = std::chrono::steady_clock::now();
+    sf::RenderTexture preBlurRenderTexture(window.getSize());
+    sf::Shader postProcessShader(std::filesystem::path{"main.vert"}, std::filesystem::path{"blur.frag"});
 
     while (window.isOpen()) {
         while (auto e = window.pollEvent()) {
@@ -48,10 +50,13 @@ int main() {
         shader.setUniform("resolution", sf::Glsl::Vec2(static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)));
         shader.setUniform("mouse", sf::Glsl::Vec2(static_cast<float>(sf::Mouse::getPosition(window).x), (  static_cast<float>(window.getSize().y) - static_cast<float>(sf::Mouse::getPosition(window).y)  )));
         auto now = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(start-now);
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now-start);
         shader.setUniform("time", elapsed.count() / 100.0f);
         window.clear(sf::Color::Black);
-        window.draw(fullscreenTriangle, &shader);
+        preBlurRenderTexture.draw(fullscreenTriangle, &shader);
+        preBlurRenderTexture.display();
+        postProcessShader.setUniform("texture", preBlurRenderTexture.getTexture());
+        window.draw(fullscreenTriangle, &postProcessShader);
         window.display();
     }
     return 0;
